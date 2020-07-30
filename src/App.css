@@ -1,0 +1,40 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+}
+
+.App-header {
+  background-color: whitesmoke;
+  height: fit-content;
+  width: fit-content;
+  margin-left: 2%;
+  margin-right: 2%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: black;
+}
+
+.App-error {
+  color: red;
+  font-weight: bold;
+}
+
+.App-warning {
+  color: orange;
+  font-weight: bold;
+}
+
+.App-info {
+  color: green;
+  font-weight: bold;
+}
+
+.App-link {
+  color: #09d3ac;
+}
