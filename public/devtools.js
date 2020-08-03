@@ -3,7 +3,7 @@
  * In here, we can create our panel with the React app inside.
  */
 
-browser.devtools.panels.create(
+chrome.devtools.panels.create(
     "Foobar",
     "/logo192.png",
     "/index.html"

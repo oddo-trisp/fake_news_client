@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import logo from './logo.svg';
 import './App.css';
+import {getCurrentTab} from "./utils";
 
 class App extends Component {
 
@@ -25,10 +26,9 @@ class App extends Component {
     constructor(props: any) {
         super(props);
 
-        chrome.browserAction.setBadgeText({text: ""})
-        chrome.browserAction.setBadgeBackgroundColor({color: ""})
+        //chrome.browserAction.setBadgeText({text: ""})
+        //chrome.browserAction.setBadgeBackgroundColor({color: ""})
 
-        this.createRequests = this.createRequests.bind(this);
         this.createScraperRequest = this.createScraperRequest.bind(this);
         this.createPredictRequest = this.createPredictRequest.bind(this);
     }
@@ -49,9 +49,6 @@ class App extends Component {
                     >
                         Learn React
                     </a>
-                    <button onClick={this.createRequests}>
-                        Activate Lasers
-                    </button>
                     <p style={{visibility: this.state.probabilityText ? 'visible' : 'hidden' }}>
                         Article is
                         <a className={this.state.probability <= 20 ? 'App-info' : this.state.probability > 20 && this.state.probability <= 60 ? "App-warning" : "App-error"}> {this.state.probabilityText} </a>
@@ -63,17 +60,25 @@ class App extends Component {
     }
 
     componentDidMount(){
-        this.createRequests();
-    }
+        getCurrentTab((tab:any) => {
 
-    createRequests(){
-        chrome.tabs.query({
-            active: true,
-            currentWindow: true
-        }, tabs => {
-            const currentURL = tabs[0].url
-            this.setState({currentURL: currentURL})
-            this.createScraperRequest();
+            // Get previous tab state if exists
+            chrome.runtime.sendMessage({type: "INIT_POPUP", tabId: tab.id}, (response) => {
+                console.log(response)
+                if(response){
+                    console.log("Set the state");
+                    this.setState({probabilityText: response.probabilityText});
+                    this.setState({probability: response.probability});
+                }
+            });
+
+            // Create post request to backend API
+            const currentURL = tab.url
+            if(this.state.probabilityText == "" || this.state.currentURL != currentURL) {
+                console.log("Time to predict for: "+currentURL);
+                this.setState({currentURL: currentURL});
+                this.createScraperRequest();
+            }
         });
     }
 
@@ -91,9 +96,9 @@ class App extends Component {
 
     createScraperRequest() {
         // POST request using fetch with error handling
-        let currentURL = {"url": this.state.currentURL};
+        const currentURL = {"url": this.state.currentURL};
         const requestOptions = this.createRequestOptions('POST', currentURL);
-        const apiURL = this.createApiURL(App.scraperSuffix)
+        const apiURL = this.createApiURL(App.scraperSuffix);
         fetch(apiURL, requestOptions)
             .then(async response => {
                 const data = await response.json();
@@ -104,7 +109,7 @@ class App extends Component {
                     const error = (data && data.message) || response.status;
                     return Promise.reject(error);
                 }
-                let article = {"title": data.title, "text": data.text};
+                const article = {"title": data.title, "text": data.text};
                 this.setState({currentArticle: article});
 
                 this.createPredictRequest();
@@ -118,7 +123,9 @@ class App extends Component {
     createPredictRequest() {
         // POST request using fetch with error handling
         const requestOptions = this.createRequestOptions('POST', this.state.currentArticle);
-        const apiURL = this.createApiURL(App.predictSuffix)
+        const apiURL = this.createApiURL(App.predictSuffix);
+        console.log(this.state.currentURL);
+        console.log(this.state.currentArticle);
         fetch(apiURL, requestOptions)
             .then(async response => {
                 const data = await response.json();
@@ -131,24 +138,28 @@ class App extends Component {
                 }
 
                 // Format notification badge
-                let probabilityNumber = parseFloat(data.probability) * 100;
-                let probabilityPercentage = probabilityNumber.toString() + " %";
-                let badgeColor = probabilityNumber <= 20 ? 'green' : probabilityNumber > 20 && probabilityNumber <= 60 ? "orange" : "red";
-                chrome.browserAction.setBadgeText({text: probabilityPercentage})
-                chrome.browserAction.setBadgeBackgroundColor({color: badgeColor})
+                const probabilityNumber = parseFloat(data.probability) * 100;
+                const probabilityPercentage = probabilityNumber.toString() + " %";
+
 
                 this.setState({probabilityText: probabilityPercentage});
                 this.setState({probability: probabilityNumber});
+
+                getCurrentTab((tab:any) => {
+                    chrome.runtime.sendMessage({type: "UPDATE_POPUP", tabId: tab.id, probabilityText: probabilityPercentage, probability: probabilityNumber}, (response) => {
+                        console.log(response)
+                        if(!response || response != "OK"){
+                            console.error('There was an error on state update!');
+                        }
+                    });
+                });
+
             })
             .catch(error => {
                 console.error('There was an error!', error);
             });
     }
 
-    componentWillUnmount() {
-        console.log("Exit!!!");
-        alert("Exit!!!");
-    }
 
 }
 
