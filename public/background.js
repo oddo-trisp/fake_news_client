@@ -1,44 +1,46 @@
-let tabState = new Map()
+import {
+    loadTabState,
+    formatNotificationBadge,
+    getCurrentTab,
+    createRequests,
+    setTabState, getTabState
+} from "./utils.js";
 
 chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
-    console.log("Ekso 11111"+changeInfo.status);
+    formatNotificationBadge("", "");
     if (changeInfo.status === 'complete' && tab.active) {
-        console.log("Mesa");
-        chrome.tabs.executeScript(tab.id, {
-            file: 'index.js'
+        getCurrentTab((tab) => {
+            loadTabState(tab);
         });
-        //window.location.assign("/index.html");
     }
 })
 
+chrome.tabs.onActivated.addListener( function (tabId, changeInfo, tab) {
+    formatNotificationBadge("", "");
+    getCurrentTab((tab) => {
+        loadTabState(tab);
+    });
+})
+
 chrome.runtime.onMessage.addListener((message, sender, response) => {
-    console.log("Receive message: "+message.type+"\n");
     switch (message.type) {
         case 'INIT_POPUP':
-            const activeState = tabState.get(message.tabId);
-            if(activeState !== undefined)
-                formatNotificationBadge(activeState.probability, activeState.probabilityText);
-
+            const activeState = getTabState(message.tabId);
             response(activeState);
             break;
         case 'UPDATE_POPUP':
-            formatNotificationBadge(message.probability, message.probabilityText);
-
-            // Save tab's state
-            const state = {probabilityText: message.probabilityText, probability: message.probability};
-            tabState.set(message.tabId, state);
-
+            setTabState(message.tabId, message.url, message.probability, message.probabilityText);
             response("OK");
             break;
+        case 'GET_CURRENT_TAB':
+            getCurrentTab((tab) => response(tab));
+            return true;        //To send asynchronous response
+        case 'CREATE_REQUESTS':
+            createRequests(message.currentURL).then(probability => response(probability));
+            return true;        //To send asynchronous response
         default:
             response('Unknown Request');
             break;
     }
 });
 
-function formatNotificationBadge(probability, probabilityText){
-    // Format notification badge
-    const badgeColor = probability <= 20 ? 'green' : probability > 20 && probability <= 60 ? "orange" : "red";
-    chrome.browserAction.setBadgeText({text: probabilityText});
-    chrome.browserAction.setBadgeBackgroundColor({color: badgeColor});
-}

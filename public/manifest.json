@@ -14,16 +14,9 @@
     "default_popup": "index.html"
   },
   "background": {
-    "scripts": ["background.js"],
+    "page": "background.html",
     "persistent": false
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_end"
-    }
-  ],
   "permissions": [
     "tabs"
   ],
