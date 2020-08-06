@@ -3,11 +3,12 @@ import {
     formatNotificationBadge,
     getCurrentTab,
     createRequests,
-    setTabState, getTabState
+    setTabState, getTabState,
+    removeTab
 } from "./utils.js";
 
 chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
-    formatNotificationBadge("", "");
+    formatNotificationBadge(-1, "");
     if (changeInfo.status === 'complete' && tab.active) {
         getCurrentTab((tab) => {
             loadTabState(tab);
@@ -16,10 +17,14 @@ chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
 })
 
 chrome.tabs.onActivated.addListener( function (tabId, changeInfo, tab) {
-    formatNotificationBadge("", "");
+    formatNotificationBadge(-1, "");
     getCurrentTab((tab) => {
         loadTabState(tab);
     });
+})
+
+chrome.tabs.onRemoved.addListener(function(tabId) {
+    removeTab(tabId);
 })
 
 chrome.runtime.onMessage.addListener((message, sender, response) => {
@@ -29,7 +34,7 @@ chrome.runtime.onMessage.addListener((message, sender, response) => {
             response(activeState);
             break;
         case 'UPDATE_POPUP':
-            setTabState(message.tabId, message.url, message.probability, message.probabilityText);
+            setTabState(message.tabId, message.url, message.probability, message.probabilityText, message.enabled);
             response("OK");
             break;
         case 'GET_CURRENT_TAB':
