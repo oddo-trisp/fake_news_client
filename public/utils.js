@@ -48,7 +48,7 @@ async function createScraperRequest(url) {
                 const error = (data && data.message) || response.status;
                 return Promise.reject(error);
             }
-            return {"title": data.title, "text": data.text};
+            return {title: data.title, text: data.text};
 
         });
 }
@@ -68,16 +68,16 @@ async function createPredictRequest(article) {
                 return Promise.reject(error);
             }
 
-            return data.probability;
+            return {article: article,probability: data.probability};
 
         })
 }
 
 export function formatNotificationBadge(probability, probabilityText){
     // Format notification badge
-    const badgeColor = probability === -1 ? null
-        : probability <= 20 ? 'green'
-            : probability > 20 && probability <= 60 ? 'orange' :
+    const badgeColor = probability === -1 ? 'black'
+        : probability <= 30 ? 'green'
+            : probability > 30 && probability <= 60 ? 'orange' :
                 'red';
     chrome.browserAction.setBadgeText({text: probabilityText});
     chrome.browserAction.setBadgeBackgroundColor({color: badgeColor});
@@ -95,13 +95,13 @@ export function loadTabState(tab){
 }
 
 export function createTabState(tab){
-    createRequests(tab.url).then(probability => {
-        if(probability){
+    createRequests(tab.url).then(response => {
+        if(response){
             // Format probabilities
-            const probabilityNumber = parseFloat(probability) * 100;
-            const probabilityPercentage = probabilityNumber.toString() + " %";
+            const probabilityNumber = parseFloat(response.probability) * 100;
+            const probabilityPercentage = probabilityNumber.toString() + "%";
 
-            setTabState(tab.id, tab.url, probabilityNumber, probabilityPercentage, true);
+            setTabState(tab.id, tab.url, probabilityNumber, probabilityPercentage, response.article, true);
         }
         else {
             console.error('There was an error prediction!');
@@ -109,11 +109,11 @@ export function createTabState(tab){
     });
 }
 
-export function setTabState(tabId, url, probabilityNumber, probabilityPercentage, enabled){
+export function setTabState(tabId, url, probabilityNumber, probabilityPercentage, article, enabled){
     formatNotificationBadge(probabilityNumber, probabilityPercentage);
 
     // Save tab's state
-    const state = {probabilityText: probabilityPercentage, probability: probabilityNumber, url:url, enabled:enabled};
+    const state = {probabilityText: probabilityPercentage, probability: probabilityNumber, url:url, article:article, enabled:enabled};
     tabState.set(tabId, state);
 
 }

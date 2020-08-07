@@ -34,14 +34,14 @@ chrome.runtime.onMessage.addListener((message, sender, response) => {
             response(activeState);
             break;
         case 'UPDATE_POPUP':
-            setTabState(message.tabId, message.url, message.probability, message.probabilityText, message.enabled);
+            setTabState(message.tabId, message.url, message.probability, message.probabilityText, message.article, message.enabled);
             response("OK");
             break;
         case 'GET_CURRENT_TAB':
             getCurrentTab((tab) => response(tab));
             return true;        //To send asynchronous response
         case 'CREATE_REQUESTS':
-            createRequests(message.currentURL).then(probability => response(probability));
+            createRequests(message.currentURL).then(resp => response(resp));
             return true;        //To send asynchronous response
         default:
             response('Unknown Request');

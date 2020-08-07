@@ -2,7 +2,11 @@ import React, {Component} from 'react';
 import logo from './logo.svg';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import BootstrapSwitchButton from "bootstrap-switch-button-react/lib/bootstrap-switch-button-react";
+import BootstrapSwitchButton from 'bootstrap-switch-button-react/lib/bootstrap-switch-button-react';
+import {ExclamationTriangleFill} from 'react-bootstrap-icons';
+import Card from 'react-bootstrap/cjs/Card';
+import Row from "react-bootstrap/cjs/Row";
+import Col from "react-bootstrap/cjs/Col";
 
 class App extends Component {
 
@@ -10,6 +14,9 @@ class App extends Component {
         probabilityText: "",
         probability: -1,
         currentURL: "",
+        currentArticle: {title: "", text: ""},
+        currentWebsite: "",
+        currentPage: "",
         enabled: true
     };
 
@@ -21,33 +28,47 @@ class App extends Component {
         this.sendUpdatePopUpMessage = this.sendUpdatePopUpMessage.bind(this);
         this.enabledChange = this.enabledChange.bind(this);
         this.clearPopUp = this.clearPopUp.bind(this);
+        this.setCurrentPageAndWebsite = this.setCurrentPageAndWebsite.bind(this);
     }
 
     render() {
         return (
-            <div className="modal">
-                <header className="modal-header">
-                    <img src={logo} className="App-logo" alt="logo"/>
-                    {/*<p>
-                        Edit <code>src/App.tsx</code> and save to reload.
-                    </p>
-                    <a
-                        className="App-link"
-                        href="https://reactjs.org"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        Learn React
-                    </a>*/}
-                    <p style={{visibility: this.state.probabilityText ? 'visible' : 'hidden' }}>
-                        Article is
-                        <a className={this.state.probability <= 20 ? 'App-info' : this.state.probability > 20 && this.state.probability <= 60 ? "App-warning" : "App-error"}> {this.state.probabilityText} </a>
-                        Fake!
-                    </p>
-                    <label className="checkbox-inline">
-                        Enabled <BootstrapSwitchButton checked={this.state.enabled} size='sm' onstyle="outline-info" offstyle="outline-primary" onChange={this.enabledChange}/>
-                    </label>
+            <div>
+                <header>
                 </header>
+                <body>
+                    <Card style={{ width: '20rem' }}>
+                        <Card.Header>
+                            <Row>
+                                <Col xs={3}><Card.Img src={logo}  alt="logo"/></Col>
+                                <Col><Card.Title className="text-secondary font-weight-bold">Fake News Detection</Card.Title></Col>
+                            </Row>
+                        </Card.Header>
+                        <Card.Body>
+                            <Card.Text style={{visibility: this.state.currentWebsite ? 'visible' : 'hidden' }}>
+                                <p className="row-cols-1">
+                                    <h6 className="font-weight-bold">Website: </h6> {this.state.currentWebsite}
+                                </p>
+                                <p>
+                                    <h6 className="font-weight-bold">Page: </h6> {this.state.currentPage}
+                                </p>
+                            </Card.Text>
+                            <Card.Text style={{visibility: this.state.probabilityText ? 'visible' : 'hidden' }}>
+                                <p>
+                                    Article <b>{this.state.currentArticle.title}</b> is
+                                    <a className={"font-weight-bold " + (this.state.probability <= 30 ? "text-success text" : this.state.probability > 30 && this.state.probability <= 60 ? "text-warning" : "text-danger")}> {this.state.probabilityText} </a>
+                                    Fake!
+                                </p>
+                            </Card.Text>
+                        </Card.Body>
+                        <Card.Footer>
+                            <Row>
+                                <Col xs={8}><Card.Link className="text-secondary" href="mailto:name@email.com"><ExclamationTriangleFill /> Report an Issue</Card.Link></Col>
+                                <Col><BootstrapSwitchButton checked={this.state.enabled} size='sm' onstyle="outline-info" offstyle="outline-danger" onChange={this.enabledChange}/></Col>
+                            </Row>
+                        </Card.Footer>
+                    </Card>
+                </body>
             </div>
         )
     }
@@ -70,9 +91,12 @@ class App extends Component {
                 this.setState({probabilityText: response.probabilityText});
                 this.setState({probability: response.probability});
                 this.setState({currentURL: response.url});
+                this.setState({currentArticle: response.article});
 
                 if(saveEnabled)         //Don' t get enabled from response when handle change on toggle button
                     this.setState({enabled: response.enabled});
+
+                this.setCurrentPageAndWebsite();
 
                 //If previous state doesn't exist make request to backend API to create it
                 if (this.state.enabled && (this.state.probabilityText == "" || this.state.currentURL != tab.url))
@@ -86,22 +110,23 @@ class App extends Component {
 
     sendCreateRequestsMessage(tab:any){
         // Create post request to backend API
-        chrome.runtime.sendMessage({type: "CREATE_REQUESTS", currentURL: tab.url}, (probability) => {
-            if (probability) {
-                const probabilityNumber = parseFloat(probability) * 100;
+        chrome.runtime.sendMessage({type: "CREATE_REQUESTS", currentURL: tab.url}, (response) => {
+            if (response) {
+                const probabilityNumber = parseFloat(response.probability) * 100;
                 const probabilityPercentage = probabilityNumber.toString() + " %";
 
+                this.setState({currentArticle: response.article});
                 this.setState({probabilityText: probabilityPercentage});
                 this.setState({probability: probabilityNumber});
 
-                this.sendUpdatePopUpMessage(tab, probabilityPercentage, probabilityNumber, this.state.enabled);
+                this.sendUpdatePopUpMessage(tab, probabilityPercentage, probabilityNumber, this.state.currentArticle,  this.state.enabled);
             } else {
                 console.error('There was an error on create requests!');
             }
         });
     }
 
-    sendUpdatePopUpMessage(tab:any, probabilityPercentage:any, probabilityNumber:any, enabled:any){
+    sendUpdatePopUpMessage(tab:any, probabilityPercentage:any, probabilityNumber:any, article:any, enabled:any){
         chrome.runtime.sendMessage(
             {
                 type: "UPDATE_POPUP",
@@ -109,6 +134,7 @@ class App extends Component {
                 url: tab.url,
                 probabilityText: probabilityPercentage,
                 probability: probabilityNumber,
+                article: article,
                 enabled: enabled
             },
             (response) => {
@@ -131,7 +157,21 @@ class App extends Component {
     clearPopUp(tab:any){
         this.setState({probabilityText: ""});
         this.setState({probability: -1});
-        this.sendUpdatePopUpMessage(tab, "","", this.state.enabled);
+        this.setState({article: {title: "", text: ""}});
+        this.sendUpdatePopUpMessage(tab, "",-1, {title: "", text: ""}, this.state.enabled);
+    }
+
+    setCurrentPageAndWebsite(){
+        const pathArray = this.state.currentURL.split('/');
+        let pageName = "";
+        for (let i = 3; i < pathArray.length; i++) {
+            pageName += "/";
+            pageName += pathArray[i];
+        }
+
+        this.setState({currentWebsite: pathArray[2]});
+        this.setState({currentPage: pageName});
+
     }
 
 

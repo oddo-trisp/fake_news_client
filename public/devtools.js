@@ -4,7 +4,7 @@
  */
 
 chrome.devtools.panels.create(
-    "Foobar",
+    "Fake News Detection",
     "/logo192.png",
     "/index.html"
 );
