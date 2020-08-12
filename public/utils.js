@@ -24,12 +24,13 @@ function createApiURL(suffix){
     return apiURL + suffix;
 }
 
-export async function createRequests(url){
+export async function createRequests(tab){
     try {
-        let article =  await createScraperRequest(url);
+        let article =  await createScraperRequest(tab.url);
         return await createPredictRequest(article);
     }
     catch (error) {
+        setTabState(tab.id, tab.url,-1, "",{title: "", text: ""}, true);
         console.error('There was an error calling the API!', error);
     }
 }
@@ -95,7 +96,7 @@ export function loadTabState(tab){
 }
 
 export function createTabState(tab){
-    createRequests(tab.url).then(response => {
+    createRequests(tab).then(response => {
         if(response){
             // Format probabilities
             const probabilityNumber = parseFloat(response.probability) * 100;

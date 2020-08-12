@@ -41,7 +41,7 @@ chrome.runtime.onMessage.addListener((message, sender, response) => {
             getCurrentTab((tab) => response(tab));
             return true;        //To send asynchronous response
         case 'CREATE_REQUESTS':
-            createRequests(message.currentURL).then(resp => response(resp));
+            createRequests(message.tab).then(resp => response(resp));
             return true;        //To send asynchronous response
         default:
             response('Unknown Request');

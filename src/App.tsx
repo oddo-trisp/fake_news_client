@@ -32,6 +32,48 @@ class App extends Component {
     }
 
     render() {
+        let body;
+        if(this.state.enabled){
+            let webSiteText = <Card.Text style={{visibility: this.state.currentWebsite ? 'visible' : 'hidden' }}>
+                <p className="row-cols-1">
+                    <h6 className="font-weight-bold">Website: </h6> {this.state.currentWebsite}
+                </p>
+                <p>
+                    <h6 className="font-weight-bold">Page: </h6> {this.state.currentPage}
+                </p>
+            </Card.Text>
+            let resultText;
+            if(this.state.probabilityText){
+                resultText =  <Card.Text>
+                    <p>
+                        Article <b>{this.state.currentArticle.title}</b> is
+                        <a className={"font-weight-bold " + (this.state.probability <= 30 ? "text-success text" : this.state.probability > 30 && this.state.probability <= 60 ? "text-warning" : "text-danger")}> {this.state.probabilityText} </a>
+                        Fake!
+                    </p>
+                </Card.Text>
+            }
+            else {
+                resultText = <Card.Text>
+                    <p>
+                        That' s not an english article page!
+                    </p>
+                </Card.Text>
+
+            }
+            body = <Card.Body>
+                {webSiteText}
+                {resultText}
+            </Card.Body>;
+        }
+        else {
+            body = <Card.Body>
+                <Card.Text>
+                    <p>
+                        Extension is disabled!
+                    </p>
+                </Card.Text>
+            </Card.Body>
+        }
         return (
             <div>
                 <header>
@@ -44,23 +86,7 @@ class App extends Component {
                                 <Col><Card.Title className="text-secondary font-weight-bold">Fake News Detection</Card.Title></Col>
                             </Row>
                         </Card.Header>
-                        <Card.Body>
-                            <Card.Text style={{visibility: this.state.currentWebsite ? 'visible' : 'hidden' }}>
-                                <p className="row-cols-1">
-                                    <h6 className="font-weight-bold">Website: </h6> {this.state.currentWebsite}
-                                </p>
-                                <p>
-                                    <h6 className="font-weight-bold">Page: </h6> {this.state.currentPage}
-                                </p>
-                            </Card.Text>
-                            <Card.Text style={{visibility: this.state.probabilityText ? 'visible' : 'hidden' }}>
-                                <p>
-                                    Article <b>{this.state.currentArticle.title}</b> is
-                                    <a className={"font-weight-bold " + (this.state.probability <= 30 ? "text-success text" : this.state.probability > 30 && this.state.probability <= 60 ? "text-warning" : "text-danger")}> {this.state.probabilityText} </a>
-                                    Fake!
-                                </p>
-                            </Card.Text>
-                        </Card.Body>
+                        {body}
                         <Card.Footer>
                             <Row>
                                 <Col xs={8}><Card.Link className="text-secondary" href="mailto:name@email.com"><ExclamationTriangleFill /> Report an Issue</Card.Link></Col>
@@ -95,7 +121,7 @@ class App extends Component {
 
                 if(saveEnabled)         //Don' t get enabled from response when handle change on toggle button
                     this.setState({enabled: response.enabled});
-
+                console.log("Enabled: "+this.state.enabled);
                 this.setCurrentPageAndWebsite();
 
                 //If previous state doesn't exist make request to backend API to create it
@@ -110,7 +136,7 @@ class App extends Component {
 
     sendCreateRequestsMessage(tab:any){
         // Create post request to backend API
-        chrome.runtime.sendMessage({type: "CREATE_REQUESTS", currentURL: tab.url}, (response) => {
+        chrome.runtime.sendMessage({type: "CREATE_REQUESTS", tab: tab}, (response) => {
             if (response) {
                 const probabilityNumber = parseFloat(response.probability) * 100;
                 const probabilityPercentage = probabilityNumber.toString() + " %";
