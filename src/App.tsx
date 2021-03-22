@@ -28,7 +28,7 @@ class App extends Component {
         this.sendUpdatePopUpMessage = this.sendUpdatePopUpMessage.bind(this);
         this.enabledChange = this.enabledChange.bind(this);
         this.clearPopUp = this.clearPopUp.bind(this);
-        this.setCurrentPageAndWebsite = this.setCurrentPageAndWebsite.bind(this);
+        this.setCurrentPageInfo = this.setCurrentPageInfo.bind(this);
     }
 
     render() {
@@ -46,16 +46,16 @@ class App extends Component {
             if(this.state.probabilityText){
                 resultText =  <Card.Text>
                     <p>
-                        Article <b>{this.state.currentArticle.title}</b> is
+                        Το άρθρο <b>{this.state.currentArticle.title}</b> είναι κατά
                         <a className={"font-weight-bold " + (this.state.probability <= 30 ? "text-success text" : this.state.probability > 30 && this.state.probability <= 60 ? "text-warning" : "text-danger")}> {this.state.probabilityText} </a>
-                        Fake!
+                        ψευδές!
                     </p>
                 </Card.Text>
             }
             else {
                 resultText = <Card.Text>
                     <p>
-                        That' s not an english article page!
+                        Η σελίδα δεν αποτελεί ελληνικό άρθρο!
                     </p>
                 </Card.Text>
 
@@ -69,7 +69,7 @@ class App extends Component {
             body = <Card.Body>
                 <Card.Text>
                     <p>
-                        Extension is disabled!
+                        Η επέκταση είναι απενεργοποιημένη!
                     </p>
                 </Card.Text>
             </Card.Body>
@@ -83,7 +83,7 @@ class App extends Component {
                         <Card.Header>
                             <Row>
                                 <Col xs={3}><Card.Img src={logo}  alt="logo"/></Col>
-                                <Col><Card.Title className="text-secondary font-weight-bold">Fake News Detection</Card.Title></Col>
+                                <Col><Card.Title className="text-secondary font-weight-bold">Greek Fake News Detection</Card.Title></Col>
                             </Row>
                         </Card.Header>
                         {body}
@@ -116,19 +116,18 @@ class App extends Component {
             if (response) {
                 this.setState({probabilityText: response.probabilityText});
                 this.setState({probability: response.probability});
-                this.setState({currentURL: response.url});
                 this.setState({currentArticle: response.article});
+                this.setCurrentPageInfo(response.url);
 
                 if(saveEnabled)         //Don' t get enabled from response when handle change on toggle button
                     this.setState({enabled: response.enabled});
-                console.log("Enabled: "+this.state.enabled);
-                this.setCurrentPageAndWebsite();
 
                 //If previous state doesn't exist make request to backend API to create it
                 if (this.state.enabled && (this.state.probabilityText == "" || this.state.currentURL != tab.url))
                     this.sendCreateRequestsMessage(tab);
 
             } else {
+                this.setCurrentPageInfo(tab.url);
                 console.error('There was an error on init popup!');
             }
         });
@@ -147,6 +146,7 @@ class App extends Component {
 
                 this.sendUpdatePopUpMessage(tab, probabilityPercentage, probabilityNumber, this.state.currentArticle,  this.state.enabled);
             } else {
+                this.setCurrentPageInfo(tab.url);
                 console.error('There was an error on create requests!');
             }
         });
@@ -187,16 +187,20 @@ class App extends Component {
         this.sendUpdatePopUpMessage(tab, "",-1, {title: "", text: ""}, this.state.enabled);
     }
 
-    setCurrentPageAndWebsite(){
-        const pathArray = this.state.currentURL.split('/');
+    setCurrentPageInfo(url:any){
+        this.setState({currentURL: url});
+
+        const pathArray = url.split('/');
         let pageName = "";
         for (let i = 3; i < pathArray.length; i++) {
             pageName += "/";
             pageName += pathArray[i];
         }
+        const formattedPageName = pageName.length < 100 ? pageName : pageName.substring(1, 100) + "...";
+
 
         this.setState({currentWebsite: pathArray[2]});
-        this.setState({currentPage: pageName});
+        this.setState({currentPage: formattedPageName});
 
     }
 

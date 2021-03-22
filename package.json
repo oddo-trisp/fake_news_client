@@ -16,7 +16,7 @@
     "react-bootstrap-icons": "^1.0.3-alpha5",
     "react-dom": "^16.10.2",
     "react-notification-badge": "^1.5.1",
-    "react-scripts": "^3.4.1",
+    "react-scripts": "^3.4.2",
     "typescript": "3.6.3"
   },
   "scripts": {
